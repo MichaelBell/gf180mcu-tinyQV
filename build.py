@@ -11,6 +11,7 @@ from librelane.flows import Flow
 sources = ["project.v", 
          "tinyQV/cpu/tinyqv.v",
          "tinyQV/cpu/alu.v",
+         "tinyQV/cpu/buffer.v",
          "tinyQV/cpu/core.v",
          "tinyQV/cpu/counter.v",
          "tinyQV/cpu/cpu.v",
@@ -46,12 +47,8 @@ if __name__ == '__main__':
     sources = [f"dir::src/{i}" for i in sources]
 
     flow_cfg = {
-        "PL_TARGET_DENSITY_PCT": 55,
-        "CLOCK_PERIOD": 25,
-        "PL_RESIZER_HOLD_SLACK_MARGIN": 0.5,
-        "PL_RESIZER_HOLD_MAX_BUFFER_PCT": 100,
-        "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.25,
-        "GRT_RESIZER_HOLD_MAX_BUFFER_PCT": 100,
+        "PL_TARGET_DENSITY_PCT": 71,
+        "CLOCK_PERIOD": 24,
         "RUN_LINTER": True,
         "LINTER_INCLUDE_PDK_MODELS": True,
         "CLOCK_PORT": "clk",
@@ -82,8 +79,8 @@ if __name__ == '__main__':
         "MAGIC_WRITE_LEF_PINONLY": True,
         "DESIGN_NAME": "tt_um_MichaelBell_tinyQV",
         "VERILOG_FILES": sources,
-        "DIE_AREA": [0, 0, 600.00, 600.00],
-        "CORE_AREA": [25.00, 25.00, 575.00, 575.00],
+        "DIE_AREA": [0, 0, 530.00, 530.00],
+        "CORE_AREA": [20.00, 20.00, 510.00, 510.00],
         "FP_PIN_ORDER_CFG": "dir::pin_order.cfg",
         "FALLBACK_SDC_FILE": "dir::base.sdc",
         "SYNTH_LATCH_MAP": "dir::latch_map.v",
