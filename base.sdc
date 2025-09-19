@@ -23,3 +23,8 @@ set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -max $spi_clk_setup_dela
 
 # Low delay on output 7 as this is (mainly) used for debug signals
 set_output_delay 1 -clock [get_clocks $::env(CLOCK_PORT)] {uo_out[7]}
+
+# Ignore switch of setup/ctrl mux on QSPI output paths
+set_false_path -from rst_reg_n_gf180mcu_fd_sc_mcu7t5v0__dffnq_1_Q -to {uio_oe uio_out}
+
+set_propagated_clock [all_clocks]

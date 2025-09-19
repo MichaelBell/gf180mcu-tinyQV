@@ -29,13 +29,6 @@ module tt_um_MichaelBell_tinyQV (
     localparam PERI_PWM = 5'hA;
     localparam PERI_DEBUG = 5'hC;
 
-    // Register the reset on the negative edge of clock for safety.
-    // This also allows the option of async reset in the design, which might be preferable in some cases
-    /* verilator lint_off SYNCASYNCNET */
-    reg rst_reg_n;
-    /* verilator lint_on SYNCASYNCNET */
-    always @(negedge clk) rst_reg_n <= rst_n;
-
     // Bidirs are used for SPI interface
     wire [3:0] qspi_data_in = {uio_in[5:4], uio_in[2:1]};
     wire [3:0] qspi_data_out;
@@ -48,6 +41,23 @@ module tt_um_MichaelBell_tinyQV (
     assign uio_out = {uio_out7, qspi_ram_a_select, qspi_data_out[3:2], 
                       qspi_clk_out, qspi_data_out[1:0], qspi_flash_select};
     assign uio_oe = rst_n ? {2'b11, qspi_data_oe[3:2], 1'b1, qspi_data_oe[1:0], 1'b1} : 8'h00;
+
+    wire [3:0] qspi_data_in_ctrl;
+    reg  [3:0] qspi_config;
+    wire [3:0] qspi_data_out_ctrl;
+    wire [3:0] qspi_data_oe_ctrl;
+    wire       qspi_clk_out_ctrl;
+    wire       qspi_flash_select_ctrl;
+    wire       qspi_ram_a_select_ctrl;
+    wire       qspi_ram_b_select_ctrl;
+    wire [3:0] qspi_data_out_setup;
+    wire [3:0] qspi_data_oe_setup;
+    wire       qspi_clk_out_setup;
+    wire       qspi_flash_select_setup;
+    wire       qspi_ram_a_select_setup;
+    wire       qspi_ram_b_select_setup;
+    wire       setup_done;
+    reg        setup_rst_n;
 
     wire [27:0] addr;
     wire  [1:0] write_n;
@@ -128,6 +138,43 @@ module tt_um_MichaelBell_tinyQV (
     end
     wire [3:0] interrupt_req = {!uart_tx_busy, uart_rx_valid, ui_in_reg[1:0]};
 
+    // Register the reset on the negative edge of clock for safety.
+    // This also allows the option of async reset in the design, which might be preferable in some cases
+    always @(negedge clk) setup_rst_n <= rst_n;
+
+    /* verilator lint_off SYNCASYNCNET */
+    (* keep *) reg rst_reg_n;
+    /* verilator lint_on SYNCASYNCNET */
+    always @(negedge clk) rst_reg_n <= rst_n & setup_done;
+
+    always @(posedge clk) begin
+        if (!setup_rst_n) begin
+            qspi_config <= qspi_data_in;
+        end
+    end
+
+    assign qspi_data_in_ctrl = rst_reg_n ? qspi_data_in : qspi_config;
+    assign qspi_data_out     = rst_reg_n ? qspi_data_out_ctrl : qspi_data_out_setup;
+    assign qspi_data_oe      = rst_reg_n ? qspi_data_oe_ctrl  : qspi_data_oe_setup;
+    assign qspi_clk_out      = rst_reg_n ? qspi_clk_out_ctrl  : qspi_clk_out_setup;
+    assign qspi_flash_select = rst_reg_n ? qspi_flash_select_ctrl : qspi_flash_select_setup;
+    assign qspi_ram_a_select = rst_reg_n ? qspi_ram_a_select_ctrl : qspi_ram_a_select_setup;
+    assign qspi_ram_b_select = rst_reg_n ? qspi_ram_b_select_ctrl : qspi_ram_b_select_setup;
+
+    qspi_setup i_setup(
+        .clk(clk),
+        .rstn(setup_rst_n),
+
+        .spi_data_out(qspi_data_out_setup),
+        .spi_data_oe(qspi_data_oe_setup),
+        .spi_clk_out(qspi_clk_out_setup),
+        .spi_flash_select(qspi_flash_select_setup),
+        .spi_ram_a_select(qspi_ram_a_select_setup),
+        .spi_ram_b_select(qspi_ram_b_select_setup),
+
+        .done(setup_done)
+    );
+
     tinyQV i_tinyqv(
         .clk(clk),
         .rstn(rst_reg_n),
@@ -144,13 +191,13 @@ module tt_um_MichaelBell_tinyQV (
         .interrupt_req(interrupt_req),
         .time_pulse(time_pulse),
 
-        .spi_data_in(qspi_data_in),
-        .spi_data_out(qspi_data_out),
-        .spi_data_oe(qspi_data_oe),
-        .spi_clk_out(qspi_clk_out),
-        .spi_flash_select(qspi_flash_select),
-        .spi_ram_a_select(qspi_ram_a_select),
-        .spi_ram_b_select(qspi_ram_b_select),
+        .spi_data_in(qspi_data_in_ctrl),
+        .spi_data_out(qspi_data_out_ctrl),
+        .spi_data_oe(qspi_data_oe_ctrl),
+        .spi_clk_out(qspi_clk_out_ctrl),
+        .spi_flash_select(qspi_flash_select_ctrl),
+        .spi_ram_a_select(qspi_ram_a_select_ctrl),
+        .spi_ram_b_select(qspi_ram_b_select_ctrl),
 
         .debug_instr_complete(debug_instr_complete),
         .debug_instr_ready(debug_instr_ready),
